@@ -7,6 +7,10 @@ from app.models.student_courses import StudentCourse
 from app.models.exam_slots import ExamSlot
 from app.models.tokens import PasswordToken, RefreshToken
 from app.models.audit_logs import AuditLog
+from app.models.selections import Selection
+from app.models.change_requests import ChangeRequest, ChangeRequestType, ChangeRequestStatus
+from app.models.unlocks import Unlock
+from app.models.notifications import Notification
 
 __all__ = [
     "Base",
@@ -18,5 +22,11 @@ __all__ = [
     "ExamSlot",
     "PasswordToken",
     "RefreshToken",
-    "AuditLog"
+    "AuditLog",
+    "Selection",
+    "ChangeRequest",
+    "ChangeRequestType",
+    "ChangeRequestStatus",
+    "Unlock",
+    "Notification",
 ]
