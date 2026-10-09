@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from app.db import get_db
@@ -156,3 +156,34 @@ def resend_setup_email(student_id: UUID, db: Session = Depends(get_db)):
     _issue_and_send_setup_email(db, student.user, student)
     db.commit()
     return {"message": "Setup email resent"}
+
+@router.post("/{student_id}/photo")
+def upload_photo(student_id: UUID, file: UploadFile = File(...), db: Session = Depends(get_db), current_user = Depends(require_role(RoleEnum.admin))):
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    # Read first 8 bytes for magic numbers
+    header = file.file.read(8)
+    file.file.seek(0)
+    
+    is_jpeg = header.startswith(b'\xff\xd8\xff')
+    is_png = header.startswith(b'\x89PNG\r\n\x1a\n')
+    
+    if not (is_jpeg or is_png):
+        raise HTTPException(status_code=400, detail="Invalid file type. Only JPG and PNG are allowed.")
+        
+    # Check file size (max 2MB)
+    file.file.seek(0, 2)
+    size = file.file.tell()
+    file.file.seek(0)
+    
+    if size > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size exceeds 2MB limit.")
+        
+    # Simulate upload to Storage
+    student.profile_photo_url = f"https://storage.examslot.test/photos/{student.id}_{file.filename}"
+    log_audit(db, current_user, "UPDATE_STUDENT_PHOTO", "Student", str(student.id), {"profile_photo_url": student.profile_photo_url})
+    db.commit()
+    
+    return {"message": "Photo uploaded successfully", "url": student.profile_photo_url}
