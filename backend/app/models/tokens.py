@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy import Column, String, DateTime, Enum, text, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from app.db import Base
@@ -12,11 +13,11 @@ class TokenPurpose(str, enum.Enum):
 class PasswordToken(Base):
     __tablename__ = "password_tokens"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
     token_hash = Column(String, unique=True, nullable=False)
-    purpose = Column(Enum(TokenPurpose, name="token_purpose", create_type=False), nullable=False)
+    purpose = Column(Enum(TokenPurpose, name="token_purpose"), nullable=False)
     
     expires_at = Column(DateTime(timezone=True), nullable=False)
     used_at = Column(DateTime(timezone=True), nullable=True)
@@ -27,7 +28,7 @@ class PasswordToken(Base):
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
     token_hash = Column(String, unique=True, nullable=False)

@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy import Column, String, Boolean, DateTime, Enum, text
 from sqlalchemy.dialects.postgresql import UUID, CITEXT
 from app.db import Base
@@ -11,10 +12,10 @@ class RoleEnum(str, enum.Enum):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, unique=True, index=True, nullable=False) # Postgres citext can be used, but String with lowercasing is safer in ORM
     password_hash = Column(String, nullable=True) # Nullable until set
-    role = Column(Enum(RoleEnum, name="role_enum", create_type=False), nullable=False)
+    role = Column(Enum(RoleEnum, name="role_enum"), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     last_login_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

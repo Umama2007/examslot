@@ -74,7 +74,7 @@ def update_course(course_id: UUID, data: CourseUpdate, db: Session = Depends(get
     changed_fields = {}
     for key, value in update_data.items():
         if getattr(course, key) != value:
-            if key not in ["password", "token"]:
+            if key not in ["password", "password_hash", "token"]:
                 changed_fields[key] = {"old": getattr(course, key), "new": value}
             setattr(course, key, value)
         

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from app.db import get_db
@@ -78,7 +78,7 @@ def create_student(data: StudentCreate, db: Session = Depends(get_db), current_u
     # Token generation and email
     student.email_sent = _issue_and_send_setup_email(db, user, student)
     
-    log_audit(db, current_user, "CREATE_STUDENT", "Student", str(student.id), data.model_dump())
+    log_audit(db, current_user, "CREATE_STUDENT", "Student", str(student.id), data.model_dump(mode="json"))
     db.commit()
     db.refresh(student)
     return student
@@ -124,10 +124,9 @@ def update_student(student_id: UUID, data: StudentUpdate, db: Session = Depends(
     update_data = data.model_dump(exclude_unset=True)
     changed_fields = {}
     for key, value in update_data.items():
-        # Handle uuid comparison string vs UUID object if needed, but we can do a simple !=
-        if str(getattr(student, key)) != str(value) and getattr(student, key) != value:
-            if key not in ["password", "token"]:
-                changed_fields[key] = {"old": str(getattr(student, key)), "new": str(value)}
+        if getattr(student, key) != value:
+            if key not in ["password", "password_hash", "token"]:
+                changed_fields[key] = {"old": getattr(student, key), "new": value}
             setattr(student, key, value)
         
     if changed_fields:
@@ -164,14 +163,23 @@ def resend_setup_email(student_id: UUID, db: Session = Depends(get_db)):
     return {"message": "Setup email resent"}
 
 @router.post("/{student_id}/photo")
-def upload_photo(student_id: UUID, file: UploadFile = File(...), db: Session = Depends(get_db), current_user = Depends(require_role(RoleEnum.admin))):
+def upload_photo(student_id: UUID, request: Request, file: UploadFile = File(...), db: Session = Depends(get_db), current_user = Depends(require_role(RoleEnum.admin))):
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size exceeds 2MB limit.")
+
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
         
-    # Read first 8 bytes for magic numbers
-    header = file.file.read(8)
-    file.file.seek(0)
+    content = b""
+    while chunk := file.file.read(8192):
+        content += chunk
+        if len(content) > 2 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File size exceeds 2MB limit.")
+            
+    # Read first 8 bytes for magic numbers from content
+    header = content[:8]
     
     is_jpeg = header.startswith(b'\xff\xd8\xff')
     is_png = header.startswith(b'\x89PNG\r\n\x1a\n')
@@ -179,17 +187,20 @@ def upload_photo(student_id: UUID, file: UploadFile = File(...), db: Session = D
     if not (is_jpeg or is_png):
         raise HTTPException(status_code=400, detail="Invalid file type. Only JPG and PNG are allowed.")
         
-    # Check file size (max 2MB)
-    file.file.seek(0, 2)
-    size = file.file.tell()
-    file.file.seek(0)
-    
-    if size > 2 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="File size exceeds 2MB limit.")
-        
-    # Simulate upload to Storage
-    student.profile_photo_url = f"https://storage.examslot.test/photos/{student.id}_{file.filename}"
+
+    # Simulate upload to Storage by returning the authenticated local route
+    student.profile_photo_url = f"/api/v1/admin/students/{student.id}/photo"
     log_audit(db, current_user, "UPDATE_STUDENT_PHOTO", "Student", str(student.id), {"profile_photo_url": student.profile_photo_url})
     db.commit()
     
     return {"message": "Photo uploaded successfully", "url": student.profile_photo_url}
+
+@router.get("/{student_id}/photo")
+def get_photo(student_id: UUID, db: Session = Depends(get_db), current_user = Depends(require_role(RoleEnum.admin))):
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if not student or not student.profile_photo_url:
+        raise HTTPException(status_code=404, detail="Photo not found")
+        
+    # Mock returning the photo for the hackathon
+    from fastapi.responses import Response
+    return Response(content=b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR", media_type="image/png")

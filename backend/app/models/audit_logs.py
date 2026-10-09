@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy import Column, String, DateTime, text, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from app.db import Base
@@ -7,7 +8,7 @@ from sqlalchemy.orm import relationship
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     actor_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
     action = Column(String, nullable=False)

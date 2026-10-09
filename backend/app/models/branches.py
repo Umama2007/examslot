@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy import Column, String, DateTime, Enum, text, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from app.db import Base
@@ -11,13 +12,13 @@ class BranchStatus(str, enum.Enum):
 class Branch(Base):
     __tablename__ = "branches"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False, index=True)
     code = Column(String, unique=True, nullable=False, index=True) # uppercase
     city = Column(String, nullable=False)
     address = Column(String, nullable=False)
     contact_number = Column(String, nullable=False)
-    status = Column(Enum(BranchStatus, name="branch_status", create_type=False), nullable=False, default=BranchStatus.active)
+    status = Column(Enum(BranchStatus, name="branch_status"), nullable=False, default=BranchStatus.active)
     seat_capacity_default = Column(Integer, nullable=True) # used in Part 3
     
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

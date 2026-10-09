@@ -70,7 +70,7 @@ def update_branch(branch_id: UUID, data: BranchUpdate, db: Session = Depends(get
     changed_fields = {}
     for key, value in update_data.items():
         if getattr(branch, key) != value:
-            if key not in ["password", "token"]:
+            if key not in ["password", "password_hash", "token"]:
                 changed_fields[key] = {"old": getattr(branch, key), "new": value}
             setattr(branch, key, value)
         

@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_KEY: str = ""
     
+    TRUST_PROXY: bool = False
+
+    # Seed
+    SEED_ADMIN_PASSWORD: str = "Admin123!"
+
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
 settings = Settings()

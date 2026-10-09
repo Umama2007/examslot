@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.db import get_db
 from app.schemas.tokens import LoginRequest, TokenResponse, ForgotPasswordRequest, SetPasswordRequest
@@ -9,6 +9,7 @@ from app.core.security import verify_password, get_password_hash, create_access_
 from app.core.ratelimit import rate_limit_login
 from app.core.email import email_service
 from app.deps import get_current_user
+from app.config import settings
 import secrets
 from datetime import datetime, timedelta, timezone
 
@@ -58,7 +59,12 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
         RefreshToken.revoked_at.is_(None)
     ).first()
     
-    if not db_token or db_token.expires_at < datetime.now(timezone.utc):
+    if not db_token:
+        clear_refresh_cookie(response)
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+        
+    expires_at = db_token.expires_at.replace(tzinfo=timezone.utc) if db_token.expires_at.tzinfo is None else db_token.expires_at
+    if expires_at < datetime.now(timezone.utc):
         clear_refresh_cookie(response)
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
         
@@ -103,14 +109,12 @@ def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 @router.post("/forgot-password")
-def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    # Always return success message for privacy
+def forgot_password(data: ForgotPasswordRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    # Always return success message for privacy (byte-identical)
     success_msg = {"message": "If an account with that email exists, a password reset link has been sent."}
     
     user = db.query(User).filter(User.email == data.email.lower()).first()
     if not user or not user.is_active:
-        # Dummy hash to prevent timing attacks
-        get_password_hash("dummy_password_to_equalize_timing")
         return success_msg
         
     raw_token = secrets.token_urlsafe(32)
@@ -123,8 +127,9 @@ def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     db.add(db_token)
     db.commit()
     
-    reset_link = f"http://localhost:5173/reset-password?token={raw_token}"
-    email_service.send_email(
+    reset_link = f"{settings.FRONTEND_URL}/reset-password?token={raw_token}"
+    background_tasks.add_task(
+        email_service.send_email,
         to=user.email,
         subject="Reset your ExamSlot password",
         html_body=f"<p>Click <a href='{reset_link}'>here</a> to reset your password. The link expires in 24 hours.</p>",
@@ -149,7 +154,11 @@ def _process_password_token(data: SetPasswordRequest, purpose: TokenPurpose, db:
         PasswordToken.used_at.is_(None)
     ).first()
     
-    if not db_token or db_token.expires_at < datetime.now(timezone.utc):
+    if not db_token:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+        
+    expires_at = db_token.expires_at.replace(tzinfo=timezone.utc) if db_token.expires_at.tzinfo is None else db_token.expires_at
+    if expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Invalid or expired token")
         
     # Validate password policy

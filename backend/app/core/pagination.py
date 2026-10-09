@@ -25,12 +25,10 @@ def paginate(db: Session, stmt: Select, page: int, page_size: int) -> Tuple[Sequ
     if page_size > 100:
         page_size = 100
         
-    # Count total items matching the statement (after filters, before limit/offset)
-    count_stmt = stmt.with_only_columns(func.count()).order_by(None)
-    total = db.scalar(count_stmt) or 0
+    total = stmt.count()
     
     total_pages = (total + page_size - 1) // page_size if page_size > 0 else 0
     
-    items = db.scalars(stmt.offset((page - 1) * page_size).limit(page_size)).all()
+    items = stmt.offset((page - 1) * page_size).limit(page_size).all()
     
     return items, total, total_pages

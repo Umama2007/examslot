@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy import Column, String, Boolean, DateTime, Date, Enum, text, Integer, ForeignKey, Numeric, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from app.db import Base
@@ -13,7 +14,7 @@ class GenderEnum(str, enum.Enum):
 class Student(Base):
     __tablename__ = "students"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     
     # Personal
@@ -22,7 +23,7 @@ class Student(Base):
     phone = Column(String, nullable=False)
     cnic_or_bform = Column(String, unique=True, nullable=False)
     date_of_birth = Column(Date, nullable=False)
-    gender = Column(Enum(GenderEnum, name="gender_enum", create_type=False), nullable=False)
+    gender = Column(Enum(GenderEnum, name="gender_enum"), nullable=False)
     address = Column(String, nullable=False)
     profile_photo_url = Column(String, nullable=True)
     

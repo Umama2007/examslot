@@ -1,3 +1,4 @@
+import uuid
 from sqlalchemy import Column, Integer, DateTime, Date, Time, text, ForeignKey, UniqueConstraint, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from app.db import Base
@@ -7,7 +8,7 @@ from sqlalchemy.orm import relationship
 class ExamSlot(Base):
     __tablename__ = "exam_slots"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
     
     exam_date = Column(Date, nullable=False)

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, Link } from 'react-router-dom';
 import { fetchClient, ApiError } from '../../api/client';
-import { useAuth, UserResponse } from '../../hooks/useAuth';
+import { useAuth, type UserResponse } from '../../hooks/useAuth';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 
 const loginSchema = z.object({

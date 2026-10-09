@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { fetchClient, ApiError } from '../../api/client';
-import { DataTable, Column } from '../../components/DataTable';
+import { DataTable, type Column } from '../../components/DataTable';
 import { Modal } from '../../components/Modal';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { Plus, Edit2, Trash2, Mail } from 'lucide-react';
@@ -62,7 +62,7 @@ export default function Students() {
   });
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<StudentForm>({
-    resolver: zodResolver(studentSchema)
+    resolver: zodResolver(studentSchema) as any
   });
 
   const openModal = (student?: any) => {
@@ -213,7 +213,7 @@ export default function Students() {
 
       <Modal isOpen={isModalOpen} onClose={closeModal} title={editingStudent ? "Edit Student" : "Add Student"} maxWidth="max-w-4xl">
         {formError && <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm border border-red-200">{formError}</div>}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
             {/* Personal Info */}

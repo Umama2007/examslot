@@ -8,9 +8,11 @@ RATE_LIMIT_STORE = defaultdict(list)
 MAX_ATTEMPTS = 5
 WINDOW_SECONDS = 60
 
+from app.config import settings
+
 def rate_limit_login(request: Request):
     forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
+    if forwarded and settings.TRUST_PROXY:
         ip = forwarded.split(",")[0].strip()
     else:
         ip = request.client.host if request.client else "unknown"

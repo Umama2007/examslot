@@ -30,13 +30,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.routers import auth, admin_branches, admin_courses, admin_students, admin_audit
+from app.routers import auth, admin_branches, admin_courses, admin_students, admin_audit, student_courses, student_branch
 
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(admin_branches.router, prefix=settings.API_V1_STR)
 app.include_router(admin_courses.router, prefix=settings.API_V1_STR)
 app.include_router(admin_students.router, prefix=settings.API_V1_STR)
 app.include_router(admin_audit.router, prefix=settings.API_V1_STR)
+app.include_router(student_courses.router, prefix=settings.API_V1_STR)
+app.include_router(student_branch.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def read_root():

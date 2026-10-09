@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchClient } from '../../api/client';
-import { DataTable, Column } from '../../components/DataTable';
+import { DataTable, type Column } from '../../components/DataTable';
 
 export default function AuditLogs() {
   const [page, setPage] = useState(1);
@@ -15,13 +15,13 @@ export default function AuditLogs() {
 
   const columns: Column<any>[] = [
     { key: 'created_at', header: 'Timestamp', render: (l) => <span className="text-xs text-gray-500">{new Date(l.created_at).toLocaleString()}</span> },
-    { key: 'action_type', header: 'Action', render: (l) => <span className="font-semibold text-primary/80 bg-primary/5 px-2 py-1 rounded text-xs">{l.action_type}</span> },
+    { key: 'action', header: 'Action', render: (l) => <span className="font-semibold text-primary/80 bg-primary/5 px-2 py-1 rounded text-xs">{l.action}</span> },
     { key: 'entity_type', header: 'Entity' },
     { key: 'entity_id', header: 'Entity ID', render: (l) => <span className="font-mono text-xs text-gray-400">{l.entity_id}</span> },
-    { key: 'user_id', header: 'User ID', render: (l) => <span className="font-mono text-xs text-gray-400">{l.user_id}</span> },
-    { key: 'changed_fields', header: 'Changes', render: (l) => (
-      <div className="max-w-xs truncate text-xs font-mono bg-gray-50 p-1 rounded">
-        {JSON.stringify(l.changed_fields)}
+    { key: 'actor_user_id', header: 'Actor', render: (l) => <span className="font-mono text-xs text-gray-400">{l.actor_user_id ?? '—'}</span> },
+    { key: 'details', header: 'Changes', render: (l) => (
+      <div className="max-w-xs truncate text-xs font-mono bg-gray-50 dark:bg-gray-800 p-1 rounded">
+        {l.details ? JSON.stringify(l.details) : '—'}
       </div>
     )}
   ];

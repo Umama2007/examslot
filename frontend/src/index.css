@@ -1,19 +1,60 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #4F46E5;
+  --color-primary-hover: #4338CA;
+  --color-secondary: #1E293B;
+  --color-background: #F8FAFC;
+  --font-family-sans: "Inter", sans-serif;
+}
 
 @layer base {
   body {
-    @apply bg-background text-secondary antialiased font-sans;
+    background-color: var(--color-background);
+    color: var(--color-secondary);
+    font-family: var(--font-family-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .dark body {
+    background-color: #0f172a;
+    color: #e2e8f0;
   }
 }
 
 /* Glassmorphism utilities */
 .glass {
-  @apply bg-white bg-opacity-70 backdrop-blur-md border border-white border-opacity-20 shadow-sm;
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.dark .glass {
+  background-color: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Micro-animations */
 .hover-lift {
-  @apply transition-transform duration-200 hover:-translate-y-1 hover:shadow-md;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+    color: black;
+  }
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
 }
