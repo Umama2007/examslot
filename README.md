@@ -113,6 +113,6 @@ erDiagram
 - **Student**: student1@examslot.test / Student123!
 
 ## Implementation Notes
-- Security: CORS, Rate Limiting, HttpOnly cookies for refresh tokens.
+- Security: CORS, Rate Limiting (Note: In-memory store used for rate limiting. In a multi-worker production setup, Redis should be used instead), HttpOnly cookies for refresh tokens.
 - UI: Fully responsive Tailwind CSS, custom Modal and ConfirmDialog components.
 - Audit: JSON diffs recorded for all admin actions.

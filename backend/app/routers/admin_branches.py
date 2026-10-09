@@ -67,10 +67,15 @@ def update_branch(branch_id: UUID, data: BranchUpdate, db: Session = Depends(get
             raise HTTPException(status_code=409, detail="Branch code already exists")
             
     update_data = data.model_dump(exclude_unset=True)
+    changed_fields = {}
     for key, value in update_data.items():
-        setattr(branch, key, value)
+        if getattr(branch, key) != value:
+            if key not in ["password", "token"]:
+                changed_fields[key] = {"old": getattr(branch, key), "new": value}
+            setattr(branch, key, value)
         
-    log_audit(db, current_user, "UPDATE_BRANCH", "Branch", str(branch.id), update_data)
+    if changed_fields:
+        log_audit(db, current_user, "UPDATE_BRANCH", "Branch", str(branch.id), changed_fields)
     db.commit()
     db.refresh(branch)
     return branch

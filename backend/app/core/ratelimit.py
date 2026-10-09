@@ -9,7 +9,11 @@ MAX_ATTEMPTS = 5
 WINDOW_SECONDS = 60
 
 def rate_limit_login(request: Request):
-    ip = request.client.host if request.client else "unknown"
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        ip = forwarded.split(",")[0].strip()
+    else:
+        ip = request.client.host if request.client else "unknown"
     now = time.time()
     
     # Clean up old timestamps

@@ -76,14 +76,14 @@ def create_student(data: StudentCreate, db: Session = Depends(get_db), current_u
     db.flush()
     
     # Token generation and email
-    _issue_and_send_setup_email(db, user, student)
+    student.email_sent = _issue_and_send_setup_email(db, user, student)
     
     log_audit(db, current_user, "CREATE_STUDENT", "Student", str(student.id), data.model_dump())
     db.commit()
     db.refresh(student)
     return student
 
-def _issue_and_send_setup_email(db: Session, user: User, student: Student):
+def _issue_and_send_setup_email(db: Session, user: User, student: Student) -> bool:
     # Invalidate old tokens
     db.query(PasswordToken).filter(
         PasswordToken.user_id == user.id,
@@ -101,7 +101,7 @@ def _issue_and_send_setup_email(db: Session, user: User, student: Student):
     db.add(db_token)
     
     setup_link = f"http://localhost:5173/set-password?token={raw_token}"
-    email_service.send_email(
+    return email_service.send_email(
         to=user.email,
         subject="Welcome to ExamSlot - Set your password",
         html_body=f"<p>Hello {student.full_name},</p><p>Your registration number is {student.registration_no}.</p><p>Click <a href='{setup_link}'>here</a> to set your password. This link expires in 24 hours.</p>",
@@ -122,10 +122,16 @@ def update_student(student_id: UUID, data: StudentUpdate, db: Session = Depends(
         raise HTTPException(status_code=404, detail="Student not found")
         
     update_data = data.model_dump(exclude_unset=True)
+    changed_fields = {}
     for key, value in update_data.items():
-        setattr(student, key, value)
+        # Handle uuid comparison string vs UUID object if needed, but we can do a simple !=
+        if str(getattr(student, key)) != str(value) and getattr(student, key) != value:
+            if key not in ["password", "token"]:
+                changed_fields[key] = {"old": str(getattr(student, key)), "new": str(value)}
+            setattr(student, key, value)
         
-    log_audit(db, current_user, "UPDATE_STUDENT", "Student", str(student.id), update_data)
+    if changed_fields:
+        log_audit(db, current_user, "UPDATE_STUDENT", "Student", str(student.id), changed_fields)
     db.commit()
     db.refresh(student)
     return student

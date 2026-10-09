@@ -71,6 +71,7 @@ class StudentResponse(BaseModel):
     branch_id: UUID | None
     branch_locked: bool
     datesheet_locked: bool
+    email_sent: bool = False
 
     created_at: datetime
     updated_at: datetime

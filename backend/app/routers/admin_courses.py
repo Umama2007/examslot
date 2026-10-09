@@ -71,10 +71,15 @@ def update_course(course_id: UUID, data: CourseUpdate, db: Session = Depends(get
             raise HTTPException(status_code=409, detail="Course code already exists")
             
     update_data = data.model_dump(exclude_unset=True)
+    changed_fields = {}
     for key, value in update_data.items():
-        setattr(course, key, value)
+        if getattr(course, key) != value:
+            if key not in ["password", "token"]:
+                changed_fields[key] = {"old": getattr(course, key), "new": value}
+            setattr(course, key, value)
         
-    log_audit(db, current_user, "UPDATE_COURSE", "Course", str(course.id), update_data)
+    if changed_fields:
+        log_audit(db, current_user, "UPDATE_COURSE", "Course", str(course.id), changed_fields)
     db.commit()
     db.refresh(course)
     return course

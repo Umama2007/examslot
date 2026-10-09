@@ -109,6 +109,8 @@ def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
     
     user = db.query(User).filter(User.email == data.email.lower()).first()
     if not user or not user.is_active:
+        # Dummy hash to prevent timing attacks
+        get_password_hash("dummy_password_to_equalize_timing")
         return success_msg
         
     raw_token = secrets.token_urlsafe(32)
